@@ -71,6 +71,7 @@ defaults() {
   uc_exe="$uc_pfx/drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/upc.exe"
   uc_games_dir="$uc_pfx/drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games"
   uc_data_dir="$uc_pfx/drive_c/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/data"
+  uc_sys_reg="$uc_pfx/system.reg"
 
   # Amazon Games
   amz_comp_dir="$compdata_dir/AmazonGamesLauncher"
@@ -195,13 +196,24 @@ generate_uc_data() {
   #echo "data dirs: in $uc_data_dir"
   #find "$uc_data_dir" -mindepth 1 -maxdepth 1 -type d -regex '.*/[0-9]+$'
 
-  while read -r -d $'\0' game_id_dir; do
-    uc_game_id="$(basename "$game_id_dir")"
-    # Right now we don't have a good way to translate this ID so just use it as the game name
-    uc_game_name=$uc_game_id
+  # The definitive place to find the game IDs of installed UPlay games is in the
+  # windows registry file. Luckily wine/proton store this data in text files in
+  # the wine pfx directory.  So we can just grep/txt process the reg files rather
+  # than resorting to launching regedit from inside a wine prefix
+  # Becasue registry data is very well formatted, we can just rely on newlines rather
+  # than NULLs to split up the inputs here
+  while IFS= read -r uc_game_id; do
+    # Extract the game name from the prefix reg file
+    uc_game_name="$(grep "\\\\Uplay Install $uc_game_id]" -A 11 "$uc_sys_reg"  | grep ^'"DisplayName"=' | cut -d '"' -f 4)"
+    
+    # Generate the launch options
     uc_game_launch_opts="uplay://launch/$uc_game_id/0"
+
+    # Generate the shortcut data
     generate_shortcut_data "$uc_game_name" "$uc_exe" "$uc_start_dir" "$uc_comp_dir" "$uc_game_launch_opts"
-  done < <(find "$uc_data_dir" -mindepth 1 -maxdepth 1 -type d -regex '.*/[0-9]+$' -print0)
+  done < <(grep -o "Uplay Install [[:digit:]]\+" "$uc_sys_reg" | cut -d ' ' -f 3)
+  # Old directory-based method that is likely unreliable
+  #done < <(find "$uc_data_dir" -mindepth 1 -maxdepth 1 -type d -regex '.*/[0-9]+$' -print0)
 
 }
 
