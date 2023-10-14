@@ -9,42 +9,6 @@ set -o nounset
 # Main supprot target is SteamDeck.  Will likely work on any other
 # Linux or SteamOS device. 
 
-# Roadmap
-# 0.1
-#  - Suport for main storefronts: EGL, GOG, EA, Ubisoft, Battle.net, Amazon
-#  - Output accurate data for generating steam links for all installed games
-# 0.2
-#  - Support for generating shortcut data that can be manually added to Steam's shortcuts.vdf
-# 0.3
-#  - Detect if a shortcut is already in shortcuts.vdf or not and add if missing
-# 0.4
-#  - Support for other storefronts: itch.io
-# 0.5
-#  - Switchable compatdata folder paths
-#  - config file support (stores paths compatdata folders)
-#  - support for compatdata/storefront install folders on sdcard
-# 0.6
-#  - Auto Detect compatdata folders for all storefronts
-# 1.0
-#  - All features above
-# 2.0
-#  - Auto-fetch image data from SteamGridDB
-# 3.0
-#  - Create shortcuts for NON-INSTALLED games (i.e. library)
-#    - Set shortcuts to install & launch the game if selected
-
-# Not on roadmap / may not address
-# - Support for game-per-compatdata/prefix
-#   - Both detecting these and generating the proper links likely a nightmare
-# - Support for Heroic or Lutris installed games
-#   - Both of these have built-in steam shortcut generation already
-# - Roms
-#   - There's tons of great tool for this already (Steam Rom Manager)
-# - Windows and OSX Support
-#   - There's not a lot of bulk import tools out there for either platform
-#   - Very well may some day make a python version that works on Windows
-#   - This is EXTREMELY low priority and likely will only occur after 2.0
-
 defaults() {
   # All defaults assume a stock Steamdeck config with all data stored
   # in the main steamapps library at $HOME/.local/share/Steam
