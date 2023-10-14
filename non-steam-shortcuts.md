@@ -107,7 +107,38 @@ As of now, there's been no identified on-disk file to correlate the GameID to a 
 haoose@github has complied a list of game IDs here
 * List of UPlay app IDs: https://github.com/Haoose/UPLAY_GAME_ID  
 
-The only definitive way to match game names to game IDs is via regedit
+The only definitive way to match game names to game IDs on WINDOWS is via regedit.  However! Wine stores the registry data for the windows prefixes in plain text files at the root of the wine prefix path! 
+
+From: https://wiki.winehq.org/Regedit
+> Note: Although Wine stores the registry as text files (specifically $WINEPREFIX/*.reg), you should use the regedit tool for making changes to the registry, just like you would on Windows. This is because of, amongst other things, the special encoding used to store keys.
+
+Because all we want to do is READ registry data, on Linux we can use any text processort to read back the contents and find the keys we want:
+
+#### Linux SteamOS searching Wine-Windows registries
+```
+prefix="/home/deck/links/compatdata/UplayLauncher/pfx"
+reg_file="$prefix/system.reg"
+
+# NOTE: the registry structure for this key is pretty well
+#       defined so we can return ALL data for the key by
+#       using grep -A 11.  It'd be better to find the line
+#       number of the key, then search starting at that line
+#       number for the data we want, but I don't know how
+#       to do that in awk or sed very well at this time
+id=3279; grep "Uplay Install $id" -A 11 "$reg_file"
+
+# Get the display name of the game
+id=3279; grep "Uplay Install $id" -A 11 "$reg_file" | grep ^'"DisplayName"=' | cut -d '"' -f 4
+
+# The display icon path (windows rooted path)
+id=3279; grep "Uplay Install $id" -A 11 "$reg_file" | grep ^'"DisplayIcon"=' | cut -d '"' -f 4
+
+# Install path (windows rooted path)
+"InstallLocation"="C:/Program Files (x86)/Ubisoft/Ubisoft Game Launcher/games/Steep/"
+```
+
+
+#### Windows 'native' regedit search on Linux
 Registrysearch: 
 * https://wiki.winehq.org/Regedit
 * https://steamcommunity.com/app/221410/discussions/0/1736589519989298578/
@@ -115,6 +146,12 @@ Registrysearch:
 STEAM_LIBRARY = Your local default games library, usually under $HOME/.local/share/Steam/steamapps/
 PROTON_BIN_PATH=$STEAM_LIBRARY/common/Proton 3.7/dist/bin/wine
 env $WINEPREFIX=$STEAM_LIBRARY/compatdata/APPID/pfx $PROTON_BIN_PATH regedit
+
+# Test
+ptwine=/home/deck/.local/share/Steam/steamapps/common/Proton\ 8.0/dist/bin/wine
+uplay_pfx="/home/deck/links/compatdata/UplayLauncher"
+gameid=""
+env $WINEPREFIX="$uplay_pfx" "$ptwine" regedit
 
 # Search for a known ID and revolve it to a game name and it's install path
 ID=410 env $WINEPREFIX=$STEAM_LIBRARY/compatdata/APPID/pfx $PROTON_BIN_PATH regedit /E /tmp/uplay.$ID.name "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\UPlay Install $ID\DisplayName"
