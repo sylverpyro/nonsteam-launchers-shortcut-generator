@@ -3,7 +3,7 @@ set -o nounset
 
 # Author: sylverpyro <sylverpyro@users.noreply.github.com>
 # Report bugs, issues, and ideas at
-#  https://github.com/sylverpyro/steamdeck-setups/issues
+#  https://github.com/sylverpyro/nonsteam-launchers-shortcut-generator/issues
 # Version: pre-0.1 (alpha)
 
 # Main supprot target is SteamDeck.  Will likely work on any other
