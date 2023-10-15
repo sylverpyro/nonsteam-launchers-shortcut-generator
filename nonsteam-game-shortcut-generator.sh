@@ -62,7 +62,9 @@ defaults() {
   ea_comp_dir="$compdata_dir/TheEAappLauncher"
   ea_pfx="$ea_comp_dir/pfx"
   ea_exe="$ea_pfx/drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EADesktop.exe"
+  ea_start_dir="$ea_pfx/drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop"
   ea_games_dir="$ea_pfx/drive_c/Program Files/EA Games"
+  ea_install_manifest='__Installer/installerdata.xml'
 
   # Uplay/Ubisoft Connect
   uc_comp_dir="$compdata_dir/UplayLauncher"
@@ -217,6 +219,34 @@ generate_uc_data() {
 
 }
 
+generate_ea_data() {
+  # Generate the launcher shortcut
+  generate_shortcut_data "EA App" "$ea_exe" "$ea_start_dir" "$ea_comp_dir" ""
+
+  # read though the game install folder as that's where the critical data lies
+  while IFS= read -r -d $'\0' game_dir; do
+    # The display name is located in the installerdata.xml file inside
+    # the game's install directory
+    display_name="$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1)"
+    # fallback to the directory name
+    if [[ "$display_name" == '' ]]; then
+      display_name="$(basename "$game_dir")"
+    fi
+
+    # The executable file for the main game is also hidden away in the installerdata file
+    game_exe="$game_dir/$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2)"
+    if [[ "$game_exe" == "$game_dir/" ]]; then
+      # fallback to the largest exe in the game directory
+      game_exe="$(find "$game_dir" -mindepth 1 -maxdepth 1 -type f -name '*.exe' | sort -n | tail -n 1)"
+    fi
+
+    # The shortcut then is just the game's dir, exe, and display name, no
+    # fancy custom launch opts
+    generate_shortcut_data "$display_name" "$game_exe" "$game_dir" "$ea_comp_dir" ""
+
+  done < <(find "$ea_games_dir" -mindepth 1 -maxdepth 1 -type d -print0)
+}
+
 # Generate shortcut data 
 generate_shortcut_data() { # name target start_dir compat_dir command_opts 
   local name="$1"
@@ -235,6 +265,7 @@ work() {
   generate_egl_data
   generate_gog_data
   generate_uc_data
+  generate_ea_data
 }
 
 main() {

@@ -210,15 +210,36 @@ SteamOS Shortcut
 NOTES: 
 * Games appear to have launching the EA App baked into their EXE files so there's not much custom to do there
 
-### EA App Shortcuts
+### EA App install location
+`/home/deck/.local/share/Steam/steamapps/compatdata/TheEAappLauncher/pfx/drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EADesktop.exe`
 
-### Steam Shortcut
-Windows Shortcut (Peggle): 
-* Target: `"C:\Program Files\EA Games\Peggle Deluxe\Peggle.exe"`
-* Start In: `C:\Program Files\EA Games\Peggle Deluxe\`
-* Launch Options: (none)
+### Installed Game List
+The Install directory for games is at
+* `/home/deck/.local/share/Steam/steamapps/compatdata/TheEAappLauncher/pfx/drive_c/Program Files/EA Games`
 
-SteamOS Shortcut (Peggle):
+### Display Name
+Three options:
+1. Strip off the install directory (may not always be fully accurate, but it's at least consistent unlike the other options...)
+   * /home/deck/.local/share/Steam/steamapps/compatdata/TheEAappLauncher/pfx/drive_c/Program Files/EA Games/Burnout Paradise
+2. Pull out of system.reg
+   * `grep '[Software\Wow6432Node\EA Games' /home/deck/.local/share/Steam/steamapps/compatdata/TheEAappLauncher/pfx/system.reg`
+   * Problems: 
+     - It appears that some games get MULTIPLE registry entries, so the results would need to be de-duplicated by 'Install Dir'
+     - The DisplayName differs in some of the multiple registry instances
+     - Not all games provide accurate data in the display name field
+3. Pull from game's installerdata.xml file
+   * `/home/deck/.local/share/Steam/steamapps/compatdata/TheEAappLauncher/pfx/drive_c/Program Files/EA Games/Burnout Paradise/__Installer/installerdata.xml`
+   * `grep "<launcher uid=\"1-3\">" installerdata.xml -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1`
+   * Problems
+     - It appears that the format and contents of the installer xml file vary from game to game so it's not actually a good source of data
+
+### Game EXE
+NOTE: Because the EA app does does not use a custom launch option to run games though the launcher (that functionality appears to be baked into every exe the EA store ships) we just need to launch the EXE file.  However we do need to know which EXE file is the game, and which ones are game config launchers.
+
+The best place (again) to find this is in the __Installer/installerdata.xml file
+```
+grep "<launcher uid=\"1-3\">" installerdata.xml -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2
+```
 
 ### Game IDs (unused)
 NOTE: These are currently not needed, but figured I'd document them
@@ -231,6 +252,16 @@ NOTE: These are currently not needed, but figured I'd document them
 
 Importnat part: `&id=STRING%3ASTRING` == `&id=OFB-EAST%3a52209`
 ```
+### EA App Shortcuts
+
+#### Steam Shortcut
+Windows Shortcut (Peggle): 
+* Target: `"C:\Program Files\EA Games\Peggle Deluxe\Peggle.exe"`
+* Start In: `C:\Program Files\EA Games\Peggle Deluxe\`
+* Launch Options: (none)
+
+SteamOS Shortcut (Peggle):
+
 
 
 ## Amazon Games
