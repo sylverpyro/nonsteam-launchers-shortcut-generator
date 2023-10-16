@@ -6,7 +6,6 @@
 3. Script addition of shortcuts directly to Steam's shortcuts VDF file
 4. Investiage other launchers/app stores
    - itch.io, Battle.net, Amazon Games
-5. Test
 
 Per-Store Notes and Resources
 * [Epic Games](#epic-games)
