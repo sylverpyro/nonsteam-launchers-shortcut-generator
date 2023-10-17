@@ -265,9 +265,54 @@ SteamOS Shortcut (Peggle):
 
 
 ## Amazon Games
-NOTES:
-* The AGL has no cloud features, so there's not a lot of point of making 'propoer' AGL links for each game at this time
-* Likely directly pointing at each EXE of each game sould be sufficient
+### Windows shortcuts
+#### for Amazon game launcher/store
+```
+Target: "C:\Users\sylverpyro\AppData\Local\Amazon Games\App\Amazon Games.exe"
+Start In: ""
+```
+
+#### Shortcut for "Shotgun King"
+NOTE: Amazon appears to just intersept web-handler events from the OS in their shortcuts
+```
+amazon-games://play/amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde
+```
+
+#### Steam shortcut for AMZ game launcher/store
+```
+target: "C:\Users\sylverpyro\AppData\Local\Amazon Games\App\Amazon Games.exe"
+startin: "C:\Users\sylverpyro\AppData\Local\Amazon Games\App"
+launch options:
+```
+
+#### Steam shortcut for AMZ "Shotgun King"
+Appears to work like every other store/launcher that uses URLs - if you pass the URL as an option to the launcher it will launch the game as expected
+```
+target: "C:\Users\sylverpyro\AppData\Local\Amazon Games\App\Amazon Games.exe"
+startin: "C:\Users\sylverpyro\AppData\Local\Amazon Games\App"
+launch options: %command% amazon-games://play/amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde
+```
+
+### Game names
+Installed at `C:\Amazon Games\Library\GAME_NAME`
+
+GAME_NAME seems to be pretty well formatted but a more definitve source would be nice
+
+Can also be found in the Registry at
+```
+Computer\HKEY_USERS\S-1-5-21-531410201-1053027858-3794204300-1002\Software\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Shotgun King - The Final Checkmate
+Key: DisplayNName
+```
+
+### Game IDs
+
+Can be located in the Registry at
+```
+Computer\HKEY_USERS\S-1-5-21-531410201-1053027858-3794204300-1002\Software\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Shotgun King - The Final Checkmate
+Key: UninstallString
+"C:\\Amazon Games\\Library\\__InstallData__\\Amazon Game Remover.exe" -m Game -p amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde
+```
+
 
 ### Installed Games 
 Installed List: `%localappdata%\Amazon Games\Data\Games\Sql\GameInstallInfo.sqlit`
