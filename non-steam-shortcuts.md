@@ -273,7 +273,7 @@ Start In: ""
 ```
 
 #### Shortcut for "Shotgun King"
-NOTE: Amazon appears to just intersept web-handler events from the OS in their shortcuts
+NOTE: Amazon appears to just interprets web-handler events from the OS in their shortcuts
 ```
 amazon-games://play/amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde
 ```
@@ -294,31 +294,35 @@ launch options: %command% amazon-games://play/amzn1.adg.product.033d4c95-45ea-44
 ```
 
 ### Game names
-Installed at `C:\Amazon Games\Library\GAME_NAME`
-
-GAME_NAME seems to be pretty well formatted but a more definitve source would be nice
-
-Can also be found in the Registry at
+Two sources:
+* Install folder name `C:\Amazon Games\Library\GAME_NAME`
+   * GAME_NAME seems to be pretty well formatted but a more definitve source would be nice
+* Can also be found in the Registry at
 ```
 Computer\HKEY_USERS\S-1-5-21-531410201-1053027858-3794204300-1002\Software\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Shotgun King - The Final Checkmate
 Key: DisplayNName
 ```
+* NOTE: product_data.json does not contain the GAME_NAME
 
 ### Game IDs
 
-Can be located in the Registry at
+Two sources:
+* Can be located in the Registry at
 ```
 Computer\HKEY_USERS\S-1-5-21-531410201-1053027858-3794204300-1002\Software\Microsoft\Windows\CurrentVersion\Uninstall\AmazonGames/Shotgun King - The Final Checkmate
 Key: UninstallString
 "C:\\Amazon Games\\Library\\__InstallData__\\Amazon Game Remover.exe" -m Game -p amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde
 ```
+* Can also be located in product data json files `C:\Amazon Games\Library\__InstallData__\GAME_NAME\product_data.json`
+```
+  "ProductId": "amzn1.adg.product.033d4c95-45ea-44ab-9ded-06c8e130efde",
 
+```
 
-### Installed Games 
-Installed List: `%localappdata%\Amazon Games\Data\Games\Sql\GameInstallInfo.sqlit`
-* NOTE: Requires sqlite client to read
-
-Install Path: 
+Extract on SteamOS with
+```
+jq -r .ProductId product_data.json
+```
 
 
 # References
