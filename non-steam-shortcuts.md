@@ -326,7 +326,8 @@ jq -r .ProductId product_data.json
 
 
 # References
-Steam VDF shortcut strcutre
+Steam VDF (Valve Data File) format docs
+* https://developer.valvesoftware.com/wiki/KeyValues#File_Format
 * https://github.com/CorporalQuesadilla/Steam-Shortcut-Manager/wiki/Steam-Shortcuts-Documentation
 
 Vortext ModWiki list of locations to detect game installations:

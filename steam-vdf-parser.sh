@@ -1,0 +1,3 @@
+#!/bin/bash - 
+## Not started yet
+## Alternative to having to incorporate Python 2.x dependences, or writing this entier thing in Rust...
