@@ -78,8 +78,10 @@ defaults() {
   # Amazon Games
   amz_comp_dir="$compdata_dir/AmazonGamesLauncher"
   amz_pfx="$amz_comp_dir/pfx"
-  amz_exe="drive_c/users/steamuser/AppData/Local/Amazon Games/App/Amazon Games.exe"
+  amz_exe="$amz_pfx/drive_c/users/steamuser/AppData/Local/Amazon Games/App/Amazon Games.exe"
+  amz_start_dir="$amz_pfx/drive_c/users/steamuser/AppData/Local/Amazon Games/App"
   amz_games_dir="$amz_pfx/drive_c/Amazon Games/Library"
+  amz_games_reg="$amz_pfx/user.reg"
 }
 
 generate_egl_data() {
@@ -225,26 +227,55 @@ generate_ea_data() {
 
   # read though the game install folder as that's where the critical data lies
   while IFS= read -r -d $'\0' game_dir; do
-    # The display name is located in the installerdata.xml file inside
-    # the game's install directory
-    display_name="$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1)"
-    # fallback to the directory name
-    if [[ "$display_name" == '' ]]; then
-      display_name="$(basename "$game_dir")"
-    fi
+    # Check if the game is actually still installed
+    # The install manifest will be gone if the game was once installed but has since
+    # been removed
+    if [[ -f "$game_dir/$ea_install_manifest" ]]; then
+      # The display name is located in the installerdata.xml file inside
+      # the game's install directory
+      display_name="$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1)"
+      # fallback to the directory name
+      if [[ "$display_name" == '' ]]; then
+        display_name="$(basename "$game_dir")"
+      fi
 
-    # The executable file for the main game is also hidden away in the installerdata file
-    game_exe="$game_dir/$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2)"
-    if [[ "$game_exe" == "$game_dir/" ]]; then
-      # fallback to the largest exe in the game directory
-      game_exe="$(find "$game_dir" -mindepth 1 -maxdepth 1 -type f -name '*.exe' | sort -n | tail -n 1)"
-    fi
+      # The executable file for the main game is also hidden away in the installerdata file
+      game_exe="$game_dir/$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2)"
+      if [[ "$game_exe" == "$game_dir/" ]]; then
+        # fallback to the largest exe in the game directory
+        game_exe="$(find "$game_dir" -mindepth 1 -maxdepth 1 -type f -name '*.exe' | sort -n | tail -n 1)"
+      fi
 
-    # The shortcut then is just the game's dir, exe, and display name, no
-    # fancy custom launch opts
-    generate_shortcut_data "$display_name" "$game_exe" "$game_dir" "$ea_comp_dir" ""
+      # The shortcut then is just the game's dir, exe, and display name, no
+      # fancy custom launch opts
+      generate_shortcut_data "$display_name" "$game_exe" "$game_dir" "$ea_comp_dir" ""
+    fi
 
   done < <(find "$ea_games_dir" -mindepth 1 -maxdepth 1 -type d -print0)
+}
+
+generate_amz_data() {
+  # Generate the launcher shortcut
+  generate_shortcut_data "Amazon Gaming" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" ""
+
+  # The game names are best sourced from the registry file
+  reg_pattern_names='[Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AmazonGames/'
+  while IFS= read -r game_name; do
+    display_name="$game_name"
+    # Find the Game ID from the reg file as well now.  The registry data is (currently)
+    # consistent and well formatted at 10 data elements per entry so if we emit the next 10
+    # lines after the registy header we should be ablet o accurately find the ID from the
+    # UninstallString (as that's the only element that contains it)
+    # Unfortunately the structue of the uninstall string, there's a lot of slicing and 
+    # dicing that needs to be done
+    game_id="$(grep -A 10 --fixed-strings "${reg_pattern_names}${game_name}] " "$amz_games_reg" | grep --fixed-strings '"UninstallString"="' | rev | cut -d ' ' -f 1 | tr -d '"' | rev)"
+    
+    # Generate the full launch string argument that needs to be passed to the launcher
+    game_launch_opts="amazon-games://play/$game_id"
+
+    # That's all the info we need for the AMZ launcher so generate the shortcut data
+    generate_shortcut_data "$display_name" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" "$game_launch_opts"
+  done < <(grep --fixed-strings "$reg_pattern_names" "$amz_games_reg" | cut -d '/' -f 2 | cut -d ']' -f 1)
 }
 
 # Generate shortcut data 
@@ -266,6 +297,7 @@ work() {
   generate_gog_data
   generate_uc_data
   generate_ea_data
+  generate_amz_data
 }
 
 main() {
