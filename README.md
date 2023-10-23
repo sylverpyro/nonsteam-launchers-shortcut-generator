@@ -1,25 +1,28 @@
 # nonsteam-launchers-shortcut-generator
-Project to create links in Steam for all non-steam storefront games that are installed.  Primary target is SteamOS/SteamDeck
+Project to create links in Steam for all non-steam storefront games that are installed.  Primary target is Linux/SteamOS/SteamDeck
 
 This is mainly a personal project, but I imagine that this would be useful for other SD and SteamOS users, so I'm going to try to make it flexible
 
-# Why
+## Why
 Personal experience: Directly installing the non-steam storefronts has proven to be the most reliable way to play non-steam games on SteamOS (Heroic and Lutris frequently have problems installing or launching games, vs the native storefronts which - unless the storefront is broken fundamentally in Proton - always tend to work as expected)
 
-# Research and references
+## Research and references
 Accumulated research of where various storefronts store data about games they have installed and extracting the necessary data to create a steam shortcut
 
 See https://github.com/sylverpyro/nonsteam-launchers-shortcut-generator/blob/main/non-steam-shortcuts.md
 
-# Tool
+## Tool
 The tooling is right now being developed and targed for SteamOS/Steamdeck
 
 Windows users have the luxury of being able to just copy/paste data from the shortcuts from various storefronts to add them to Steam, so automating the addition of shortcuts on Windows will likely be a completely seperate project once this tool reaches 2.0
 
-# Current State
+## Current State
 Pre-0.1
 
-Working: Generate text help for creating shortcuts for all installed EGL, GOG, EA, Ubisoft, and Amazon games
+Working:
+* Generate text help for creating shortcuts for all installed EGL, GOG, EA, Ubisoft, and Amazon
+* Works on SteamDeck with stock installs from NonSteamLaunchers project
+* Works on non-SteamDeck Linux as long as Steam folder is symlink'd to ~/.local/shared/Steam
 
 Not Working:
 - Detection of games that were installed but are now uninstalled is spotty (EA at least is fixed)
@@ -28,13 +31,14 @@ Not Working:
 
 Other functionality is listed in Roadmap
 
-# Roadmap
+## Roadmap
 * 0.1
   - Support for main storefronts: EGL, GOG, EA, Ubisoft, Battle.net, Amazon
   - Output accurate data for generating steam links for all installed games
 
 * 0.2
   - Support for detecting proton and GE-Proton instances for generating steam VDF data
+    - After some reasearch, this may require, or at lest necessitate, switching this to Python so I don't need to implement a bash-parser for the Valve DataFormat which exists in Python and Rust already
   - Support for setting preferred Proton/GE-Proton version (default will likely be Ge-Proton-LATEST, then Proton-LATEST)
 
 * 0.3
