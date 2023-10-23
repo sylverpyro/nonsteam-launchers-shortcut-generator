@@ -18,8 +18,14 @@ defaults() {
   # Support for arbitrary storefront compatdata folders coming in 0.5
   # support for sdcard installed storefronts coming in 0.5
 
-  # The main steam root
+  # The main steam root on the steamdeck
+  # On other Linux distros this can be in SEVERAL different places
+  # The 'stock' Linux installer for Steam (debian)
+  #  $HOME/.steam/debian-installation
+  # The flatpak install location
+  #  $HOME/.var/app/valve.steam...
   steam_root="$HOME/.local/share/Steam"
+
   # The steamapps folder
   steamapps_dir="$steam_root/steamapps"
   # The compatdata folder (i.e. proton/wine prefixes)
@@ -93,15 +99,17 @@ generate_egl_data() {
   # Advise if the overlay has not been disabled yet
   if [[ -f "$egl_overlay" ]]; then
     echo "NOTE: EGL Overlay enabled - disable with: mv \"$egl_overlay\" \"${egl_overlay}-disabled\""
+    echo ""
   fi
   if [[ -f "$egl_overlay_64" ]]; then
     echo "NOTE: EGL Overlay enabled - disable with: mv \"$egl_overlay_64\" \"${egl_overlay_64}-disabled\""
+    echo ""
   fi
 
   # Generate the Launcher shortcut
   generate_shortcut_data "$egl_storefront_name" "$egl_exe" "$egl_start_dir" "$egl_comp_dir" "$egl_storefront_launch_opts"
 
-  echo "Info files: $(find "$egl_game_manifests" -mindepth 1 -maxdepth 1 -type f -name '*.info' -print0)"
+  #echo "Info files: $(find "$egl_game_manifests" -mindepth 1 -maxdepth 1 -type f -name '*.info' -print0)"
 
   # Generate shortcuts for all installed games
   while IFS= read -r -d $'\0' item_file; do
@@ -121,7 +129,7 @@ generate_egl_data() {
     #echo "art  ID: $artifactId"
     
     # Generate the cmd_opts
-    local cmd_opts="-com.epicgames.launcher://apps/$namespaceId%%3A$itemId%%3A$artifactId?action=launch&silent=true"
+    local cmd_opts="-com.epicgames.launcher://apps/$namespaceId%3A$itemId%3A$artifactId?action=launch&silent=true"
 
     # Generate the shortcut
     generate_shortcut_data "$display_name" "$egl_exe" "$egl_start_dir" "$egl_comp_dir" "$cmd_opts"
@@ -187,7 +195,7 @@ generate_gog_data() {
     # Generate the shortcut data
     generate_shortcut_data "$display_name" "$gog_exe" "$gog_start_dir" "$gog_comp_dir" "$cmd_opts"
     echo ""
-  done < <(find "$gog_games_dir" -mindepth 1 -maxdepth 1 -type d -print0)
+  done < <(find "$gog_games_dir" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
   echo ""
 }
 
@@ -222,60 +230,67 @@ generate_uc_data() {
 }
 
 generate_ea_data() {
-  # Generate the launcher shortcut
-  generate_shortcut_data "EA App" "$ea_exe" "$ea_start_dir" "$ea_comp_dir" ""
+# Check if the EA app is installed
+  if [[ -f "$ea_exe" ]]; then
+    # Generate the launcher shortcut
+    generate_shortcut_data "EA App" "$ea_exe" "$ea_start_dir" "$ea_comp_dir" ""
 
-  # read though the game install folder as that's where the critical data lies
-  while IFS= read -r -d $'\0' game_dir; do
-    # Check if the game is actually still installed
-    # The install manifest will be gone if the game was once installed but has since
-    # been removed
-    if [[ -f "$game_dir/$ea_install_manifest" ]]; then
-      # The display name is located in the installerdata.xml file inside
-      # the game's install directory
-      display_name="$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1)"
-      # fallback to the directory name
-      if [[ "$display_name" == '' ]]; then
-        display_name="$(basename "$game_dir")"
+    # read though the game install folder as that's where the critical data lies
+    while IFS= read -r -d $'\0' game_dir; do
+      # Check if the game is actually still installed
+      # The install manifest will be gone if the game was once installed but has since
+      # been removed
+      if [[ -f "$game_dir/$ea_install_manifest" ]]; then
+        # The display name is located in the installerdata.xml file inside
+        # the game's install directory
+        display_name="$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep "<name locale=\"en_" | tr '<' '>' | cut -d '>' -f 3 | head -n 1)"
+        # fallback to the directory name
+        if [[ "$display_name" == '' ]]; then
+          display_name="$(basename "$game_dir")"
+        fi
+
+        # The executable file for the main game is also hidden away in the installerdata file
+        game_exe="$game_dir/$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2)"
+        if [[ "$game_exe" == "$game_dir/" ]]; then
+          # fallback to the largest exe in the game directory
+          game_exe="$(find "$game_dir" -mindepth 1 -maxdepth 1 -type f -name '*.exe' | sort -n | tail -n 1)"
+        fi
+
+        # The shortcut then is just the game's dir, exe, and display name, no
+        # fancy custom launch opts
+        generate_shortcut_data "$display_name" "$game_exe" "$game_dir" "$ea_comp_dir" ""
       fi
 
-      # The executable file for the main game is also hidden away in the installerdata file
-      game_exe="$game_dir/$(grep "<launcher uid=\"1-3\">" "$game_dir/$ea_install_manifest" -A 20 | grep -o "\].*</filePath>" | tr ']' '<' | cut -d '<' -f 2)"
-      if [[ "$game_exe" == "$game_dir/" ]]; then
-        # fallback to the largest exe in the game directory
-        game_exe="$(find "$game_dir" -mindepth 1 -maxdepth 1 -type f -name '*.exe' | sort -n | tail -n 1)"
-      fi
+    done < <(find "$ea_games_dir" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
 
-      # The shortcut then is just the game's dir, exe, and display name, no
-      # fancy custom launch opts
-      generate_shortcut_data "$display_name" "$game_exe" "$game_dir" "$ea_comp_dir" ""
-    fi
-
-  done < <(find "$ea_games_dir" -mindepth 1 -maxdepth 1 -type d -print0)
+  fi
 }
 
 generate_amz_data() {
-  # Generate the launcher shortcut
-  generate_shortcut_data "Amazon Gaming" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" ""
+  # Check if the AMZ store is installed
+  if [[ -f "$amz_exe" ]]; then
+    # Generate the launcher shortcut
+    generate_shortcut_data "Amazon Gaming" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" ""
 
-  # The game names are best sourced from the registry file
-  reg_pattern_names='[Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AmazonGames/'
-  while IFS= read -r game_name; do
-    display_name="$game_name"
-    # Find the Game ID from the reg file as well now.  The registry data is (currently)
-    # consistent and well formatted at 10 data elements per entry so if we emit the next 10
-    # lines after the registy header we should be ablet o accurately find the ID from the
-    # UninstallString (as that's the only element that contains it)
-    # Unfortunately the structue of the uninstall string, there's a lot of slicing and 
-    # dicing that needs to be done
-    game_id="$(grep -A 10 --fixed-strings "${reg_pattern_names}${game_name}] " "$amz_games_reg" | grep --fixed-strings '"UninstallString"="' | rev | cut -d ' ' -f 1 | tr -d '"' | rev)"
-    
-    # Generate the full launch string argument that needs to be passed to the launcher
-    game_launch_opts="amazon-games://play/$game_id"
+    # The game names are best sourced from the registry file
+    reg_pattern_names='[Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\AmazonGames/'
+    while IFS= read -r game_name; do
+      display_name="$game_name"
+      # Find the Game ID from the reg file as well now.  The registry data is (currently)
+      # consistent and well formatted at 10 data elements per entry so if we emit the next 10
+      # lines after the registy header we should be ablet o accurately find the ID from the
+      # UninstallString (as that's the only element that contains it)
+      # Unfortunately the structue of the uninstall string, there's a lot of slicing and
+      # dicing that needs to be done
+      game_id="$(grep -A 10 --fixed-strings "${reg_pattern_names}${game_name}] " "$amz_games_reg" | grep --fixed-strings '"UninstallString"="' | rev | cut -d ' ' -f 1 | tr -d '"' | rev)"
 
-    # That's all the info we need for the AMZ launcher so generate the shortcut data
-    generate_shortcut_data "$display_name" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" "$game_launch_opts"
-  done < <(grep --fixed-strings "$reg_pattern_names" "$amz_games_reg" | cut -d '/' -f 2 | cut -d ']' -f 1)
+      # Generate the full launch string argument that needs to be passed to the launcher
+      game_launch_opts="amazon-games://play/$game_id"
+
+      # That's all the info we need for the AMZ launcher so generate the shortcut data
+      generate_shortcut_data "$display_name" "$amz_exe" "$amz_start_dir" "$amz_comp_dir" "$game_launch_opts"
+    done < <(grep --fixed-strings "$reg_pattern_names" "$amz_games_reg" | cut -d '/' -f 2 | cut -d ']' -f 1)
+  fi
 }
 
 # Generate shortcut data 
