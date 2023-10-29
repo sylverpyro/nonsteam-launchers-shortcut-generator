@@ -1,13 +1,16 @@
 #!/usr/bin/python3
 
+# We need pathlib as if we are on Linux we need the ability to manipulate wine prefix paths, which are windows-like.  os.path will only let us manipulate paths that match the underlying OS
 import pathlib
+# Needed to manipulate 'real' paths as the OS sees them
 import os
+# Needed to read various storefront manifest files
 import json
 
 def defaults(): 
     # All defaults assume a stock Steamdeck config with all data stored
     # in the main steamapps library at $HOME/.local/share/Steam
-    # All Storefront defaults assume they were intalled with 
+    # All Storefront defaults assume they were intalled with
     # Non-Steam-Game-Launchers on the main storage device (not sdcard)
     # https://github.com/moraroy/NonSteamLaunchers-On-Steam-Deck
     # Support for arbitrary storefront compatdata folders coming in 0.5
@@ -66,7 +69,7 @@ def defaults():
 
     # EA App
     ## NOTE: EA App games currently do not use either the launcher path or dir for
-    ##       generating the shortcut - it's based on the games dir and game exe only
+    ##     generating the shortcut - it's based on the games dir and game exe only
     ea_comp_dir="$compdata_dir/TheEAappLauncher"
     ea_pfx="$ea_comp_dir/pfx"
     ea_exe="$ea_pfx/drive_c/Program Files/Electronic Arts/EA Desktop/EA Desktop/EADesktop.exe"
@@ -115,19 +118,17 @@ class Storefront():
 class EpicGamesStore(Storefront):
     def __init__(self):
         Storefront.__init__(self)
-        # EGS stores the information about installed games in a special manifest directory that we need to be able to scan
-        # Path to the EGS store manifest directory
-        manifest_dir = ''
-        # Generally we want to advise if the EGS overlays are enabled
-        # To advise on this we need the path to the overlay exe's
-        # Path to EGS Overlay
-        overlay = ''
-        # Path to EGS 64-bit overaly
-        overlay_64 = ''
+        # The name of the storefront
         self.name = "Epic Games Store"
-        self.compat_dir = os.path.join(steam_paths.compatdata_dir,"EpicGamesLauncher")
+        # The path to the main Steam compatdata directory
+        self.steam_compatdata_dir = steam_paths.compatdata_dir
+        # The compatdata director for THIS store
+        self.compat_dir = os.path.join(self.steam_compatdata_dir,"EpicGamesLauncher")
+        # The wine prefix root
         self.wine_pfx=os.path.join(self.compat_dir,'pfx')
-        self.launch_opts = '-com.epicgames'
+        # Launch options required
+        self.store_launch_flag = '-com.epicgames'
+        self.game_launch_flag = '-com.epicgames.launcher://apps/'
         self.exe_name = 'EpicGamesLauncher.exe'
         self.start_dir = os.path.join(self.wine_pfx,'drive_c/Program Files (x86)/Epic Games')
         self.exe = os.path.join(self.start_dir,self.exe_name)
@@ -149,29 +150,14 @@ class EpicGamesStore(Storefront):
         self.overlay = os.path.join(self.wine_pfx,'drive_c/Program Files (x86)/Epic Games/Launcher/Portal/Extras/Overlay/EOSOverlayRenderer-Win32-Shipping.exe')
         self.overlay_64 = os.path.join(self.wine_pfx,'drive_c/Program Files (x86)/Epic Games/Launcher/Portal/Extras/Overlay/EOSOverlayRenderer-Win64-Shipping.exe')
 
+        # Then find the installed games
+        # This populates the game_list array
+        self.game_list = []
+        self.find_installed()
+
     # Generate the shortcut for the launcher
     def launcher_shortcut(self):
-        generate_shortcut(self.name, self.exe, self.start_dir, self.launch_opts, self.compat_dir)
-
-    # List installed games
-    def list_installed(self):
-        #print("Scanning: {}".format(self.manifest_dir))
-        for file in os.listdir(self.manifest_dir):
-            #print("Found: {}".format(file))
-            file_name, file_ext = os.path.splitext(file)
-            # if the object found is a manifest ('.item' file)
-            if file_ext == '.item' :
-                # Derive the full path of the manifest
-                full_path = os.path.join(self.manifest_dir,file)
-                print("Found game manifest: {}".format(file))
-                # Open it as JSON
-                with open(full_path, "r") as manifest :
-                    keys = json.load(manifest)
-                    # The DisplayName key is the name of the game as shown by the launcher
-                    gamename = keys["DisplayName"]
-                    print("Game name: {}".format(gamename))
-
-
+        generate_shortcut(self.name, self.exe, self.start_dir, self.store_launch_flag, self.compat_dir)
 
     # Check if the EGS overlays are still enabled (i.e. not renamed)
     # There's no GUI way to disable this, so it needs to be done at the FS level
@@ -181,12 +167,103 @@ class EpicGamesStore(Storefront):
         if os.path.isfile(self.overlay_64) :
             print("Epic Games overlay enabled.  Disable by renaming {}".format(self.overlay_64))
 
+    def list_installed(self):
+        # Dump the info for all games that were found
+        for game in self.game_list:
+            game.info()
+
+    def list_shortcuts(self):
+        # Dump the shortcut infor for all games found
+        for game in self.game_list:
+            game.shortcut(self.exe, self.start_dir, self.compat_dir)
+
+
+    # List installed games
+    def find_installed(self):
+        #print("Scanning: {}".format(self.manifest_dir))
+        for file in os.listdir(self.manifest_dir):
+            #print("Found: {}".format(file))
+            file_name, file_ext = os.path.splitext(file)
+            # if the object found is a manifest ('.item' file)
+            if file_ext == '.item' :
+                # Derive the full path of the manifest
+                full_manifest_path = os.path.join(self.manifest_dir,file)
+                print("Found game manifest: {}".format(file))
+                # Create a new game
+                self.game_list.append(EGSgame(full_manifest_path, self.wine_pfx))
+                #game.info()
+                # Generate it's shortcut
+                #game.shortcut(self.exe, self.start_dir, self.compat_dir)
+
+class EGSgame():
+    def __init__(self, manifest_path, prefix = ''):
+        with open(manifest_path, "r") as manifest :
+            self.keys = json.load(manifest)
+            # The DisplayName key is the name of the game as shown by the launcher
+            self.gamename = self.keys["DisplayName"]
+            # NOTE: There is a CatalogNamesape AND MainGameCatalogNamespace ID in the manifest file.  If the game has DLC or expansions, the CatalogNamespace will point to the DLC or expansion, and the MainGameCatalogNamespace will point to the real game executable. To verify this manifest points at a main game and not DLC we check if these two values are the same.  If they're not then we don't want to add this entry
+            self.namespaceID = self.keys["CatalogNamespace"]
+            self.mainNamespaceID = self.keys["MainGameCatalogNamespace"]
+            if self.namespaceID == self.mainNamespaceID :
+                self.type = 'main title'
+            else :
+                print("This is likely DLC not a main title. Skipping")
+                self.type = 'dlc'
+            # NOTE: This is the non-main key in case we want to act on DLC titles
+            self.itemID = self.keys["CatalogItemId"]
+            # NOTE: This is the non-main key in case we want to act on DLC titles
+            self.artifactID = self.keys["AppName"]
+            # Get the executable and install directory so we can verify the game is actually installed still
+            self.install_path = self.keys["InstallLocation"]
+            self.game_exe = self.keys["LaunchExecutable"]
+            # We're done extracting data, so close the file
+            manifest.close()
+            # Generate the exe path
+            # We always want the PURE windows path representation here in case
+            # we are on Linux in a wine prefix
+            self.exe_path = pathlib.PureWindowsPath(self.install_path, self.game_exe)
+            if prefix == '' :
+                self.real_exe_path = self.exe_path
+            else :
+                # If there's a wine prefix, then we need to do some massaging since the self-reported exe path doesn't know it's in a wine prefix
+                #drive, path = os.path.splitdrive(self.install_path)
+                # print()
+                # print("Split '{}' into '{}' and '{}'".format(self.exe_path, self.exe_path.anchor, self.exe_path.relative_to(self.exe_path.drive)))
+                # print()
+                #self.real_exe_path = os.path.join(prefix,'drive_c',path)
+                # TODO / BUG: This doesn't actually result in a valid posix path
+                # NEED TO FIX
+                print("BROKEN Joining '{}' and '{}'".format(prefix, pathlib.PurePath.as_posix(self.exe_path.relative_to(self.exe_path.drive))))
+
+                self.real_exe_path = pathlib.PurePath(prefix)
+                self.real_exe_path.joinpath(pathlib.PurePath.as_posix(self.exe_path.relative_to(self.exe_path.drive)))
+            self.game_launch_opts = "-com.epicgames.launcher://apps/{}%3A{}%3A{}?action=launch&silent=true".format(self.namespaceID, self.itemID ,self.artifactID)
+    def info(self):
+        print("Game name:    {} ({})".format(self.gamename,self.type))
+        print("Executable:   {}".format(self.real_exe_path))
+        print("Namespace ID: {}".format(self.namespaceID))
+        print("Item ID:      {}".format(self.itemID))
+        print("Artifact ID:  {}".format(self.artifactID))
+        print()
+    def shortcut(self, launcher_exe, launcher_startdir, launcher_compatdir):
+        if self.type == 'main title' :
+            generate_shortcut(self.gamename, launcher_exe, launcher_startdir, self.game_launch_opts, launcher_compatdir)
+            print()
+
 
 # Generate steam shortcuts
 def generate_shortcut(name, target, start_dir, command_opts, compat_dir=''):
+    # Steam shortcuts have 4 main components:
+    # Name:     The name to display in the library
+    # Target:   The 'command' to invoke to run the game
+    # Start In: The directory to enter before invoking the command to run
+    #             the game. This allows for games to provide libraries that
+    #             override system libraries
+    # Launch Options: Options and flags to surround the TARGET command with
+    #                   This generally isn't needed except on Linux
     print("Name:        {}".format(name))
-    print("Target:      {}".format(target))
-    print("Start In:    {}".format(start_dir))
+    print("Target:      \"{}\"".format(target))
+    print("Start In:    \"{}\"".format(start_dir))
     if compat_dir == '' :
         print("Launch Opts: %command% \"{}\"".format(command_opts))
     else:
@@ -197,7 +274,7 @@ def generate_shortcut(name, target, start_dir, command_opts, compat_dir=''):
 class steam_paths():
     # grab the user home directory
     user_home = pathlib.Path.home()
-    
+
     # The main steam root on the steamdeck
     # On other Linux distros this can be in SEVERAL different places
     # The 'stock' Linux installer for Steam (debian)
@@ -212,9 +289,6 @@ class steam_paths():
     # The compatdata folder (i.e. proton/wine prefixes)
     global compdata_dir ; compatdata_dir = os.path.join(steamapps_dir,"compatdata")
 
-#def find_steam_paths():
-
-
 def main(): 
     defaults()
     #print("Steam root: {}".format(steam_paths.steam_root))
@@ -223,9 +297,10 @@ def main():
     egs.launcher_shortcut()
     egs.check_overlays()
     egs.list_installed()
+    egs.list_shortcuts()
     #print("egs overlay: {}".format(egs.overlay))
 
-#if __name__ == "__main__":
-#    main()
+if __name__ == "__main__":
+    main()
 
-main()
+#main()
