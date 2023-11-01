@@ -188,7 +188,7 @@ class EpicGamesStore(Storefront):
             if file_ext == '.item' :
                 # Derive the full path of the manifest
                 full_manifest_path = os.path.join(self.manifest_dir,file)
-                print("Found game manifest: {}".format(file))
+                #print("Found game manifest: {}".format(file))
                 # Create a new game
                 self.game_list.append(EGSgame(full_manifest_path, self.wine_pfx))
                 #game.info()
@@ -233,14 +233,14 @@ class EGSgame():
                 #self.real_exe_path = os.path.join(prefix,'drive_c',path)
                 # TODO / BUG: This doesn't actually result in a valid posix path
                 # NEED TO FIX
-                print("BROKEN Joining '{}' and '{}'".format(prefix, pathlib.PurePath.as_posix(self.exe_path.relative_to(self.exe_path.drive))))
+                #print("BROKEN Joining '{}' and '{}'".format(prefix, pathlib.PurePath.as_posix(self.exe_path.relative_to(self.exe_path.drive))))
 
                 self.real_exe_path = pathlib.PurePath(prefix)
                 self.real_exe_path.joinpath(pathlib.PurePath.as_posix(self.exe_path.relative_to(self.exe_path.drive)))
             self.game_launch_opts = "-com.epicgames.launcher://apps/{}%3A{}%3A{}?action=launch&silent=true".format(self.namespaceID, self.itemID ,self.artifactID)
     def info(self):
         print("Game name:    {} ({})".format(self.gamename,self.type))
-        print("Executable:   {}".format(self.real_exe_path))
+        #print("Executable:   {}".format(self.real_exe_path))
         print("Namespace ID: {}".format(self.namespaceID))
         print("Item ID:      {}".format(self.itemID))
         print("Artifact ID:  {}".format(self.artifactID))
@@ -296,7 +296,7 @@ def main():
     #print("EGL Name: {}".format(egs.name))
     egs.launcher_shortcut()
     egs.check_overlays()
-    egs.list_installed()
+    #egs.list_installed()
     egs.list_shortcuts()
     #print("egs overlay: {}".format(egs.overlay))
 
