@@ -35,13 +35,20 @@ class shortcutsVDF:
     print("shortcut file init: {}".format(self.shortcutsPath))
 
   def readShortcuts(self):
-    contents = open(self.shortcutsPath, "r").read()
+    # https://docs.python.org/3/library/functions.html#open
+    # NOTE: a VDF file MUST be opened in 'binary' mode in order to
+    #       properly handle the binary sequences that valve uses to
+    #       seperate fields
+    #       Unfortunately, this means that we cannot use string search functions
+    contents = open(self.shortcutsPath, "rb").read()
+    #print("Got contents: {}".format(contents))
+
     #contents = shortcutsFile.read()
     #shortcuts = re.search("\u0000[0-9]+\u0000", contents)
-    shortcuts = re.search(r"\u0000shortcuts\u0000(.*)\u0008\u0008$", contents)
-    for entry in shortcuts:
-      print("Entry: {}".format(entry))
-    shortcutsFile.close()
+    #shortcuts = re.search(r"\u0000shortcuts\u0000(.*)\u0008\u0008$", contents)
+    #for entry in shortcuts:
+    #  print("Entry: {}".format(entry))
+    contents.close()
 
 def main():
   print("starting main")
