@@ -7,23 +7,26 @@
 
 # Needed to open, read, and write files
 import sys
+
 # Needed to normalize filesystem paths
+# https://docs.python.org/3/library/os.html#module-os
 import os
+
 # Needed to leverage Regex searches of the shortcut file
 import re
 
 # Define some short-hand for the binary speerators used in the VDF format
 #  https://developer.valvesoftware.com/wiki/Add_Non-Steam_Game
 # Null (NUL)
-x00 = u'\x00'
+nul = b'\x00'
 # Start of Heading (SOH)
-x01 = u'\x01'
+soh = b'\x01'
 # Backspace (BS)
-x08 = u'\x08'
+bs = b'\x08'
 # Line Feed (LF)
-x0a = u'\x0a'
+lf = b'\x0a'
 # Start of Text (STX)
-x02 = u'\x02'
+stx = b'\x02'
 
 class NonSteamShortcut:
   def __init__(self, displayName, targetExe, startIn='', launchOptions=''):
@@ -39,16 +42,27 @@ class shortcutsVDF:
     # NOTE: a VDF file MUST be opened in 'binary' mode in order to
     #       properly handle the binary sequences that valve uses to
     #       seperate fields
-    #       Unfortunately, this means that we cannot use string search functions
+    #       We just need to remember to do 'b' (binary) searches from now on
+    # This worked different in Python 2 which most python VDF readers were
+    # based on - namely python 2 didn't differentiate between binary and
+    # character strings
     contents = open(self.shortcutsPath, "rb").read()
-    #print("Got contents: {}".format(contents))
 
-    #contents = shortcutsFile.read()
-    #shortcuts = re.search("\u0000[0-9]+\u0000", contents)
-    #shortcuts = re.search(r"\u0000shortcuts\u0000(.*)\u0008\u0008$", contents)
-    #for entry in shortcuts:
-    #  print("Entry: {}".format(entry))
-    contents.close()
+    # Example of compiling binary regex seraches and dicts
+    # https://code.activestate.com/recipes/181065-parsing-binary-files-with-regular-expressions/
+    nullterms = re.compile(b"(.*?)\x00",re.DOTALL)
+    nullsplits = nullterms.findall(contents)
+    for entry in nullsplits:
+      print("Entry: {}".format(entry))
+
+    # Regex to find the shortcuts by 'section number' (shortcut number)
+    re_shortcuts = re.compile(b"\x00([0-9*])\x00",re.DOTALL)
+    shortcuts = re_shortcuts.findall(contents)
+    for entry in shortcuts:
+      print ("shortcut: {}".format(entry))
+
+    # Binary streams have no close function
+    #contents.close()
 
 def main():
   print("starting main")
