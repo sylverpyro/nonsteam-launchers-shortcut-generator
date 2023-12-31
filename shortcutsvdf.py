@@ -15,6 +15,7 @@ import os
 # Needed to leverage Regex searches of the shortcut file
 import re
 
+
 # Define some short-hand for the binary speerators used in the VDF format
 #  https://developer.valvesoftware.com/wiki/Add_Non-Steam_Game
 # Null (NUL)
@@ -35,6 +36,7 @@ class NonSteamShortcut:
 class shortcutsVDF:
   def __init__(self):
     self.shortcutsPath = "/home/sylverpyro/example-shortcuts.vdf"
+    #self.shortcutsPath = "/home/sylverpyro/prod-steam.vdf"
     print("shortcut file init: {}".format(self.shortcutsPath))
 
   def readShortcuts(self):
@@ -55,11 +57,25 @@ class shortcutsVDF:
     for entry in nullsplits:
       print("Entry: {}".format(entry))
 
-    # Regex to find the shortcuts by 'section number' (shortcut number)
-    re_shortcuts = re.compile(b"\x00([0-9*])\x00",re.DOTALL)
+    # Regex to find the shortcuts by shortcut number (NUL[0-9]*NUL ... BS BS)
+    re_shortcuts = re.compile(b"(\x00[0-9*]\x00[^\x08]*[\x08]{2,})",re.DOTALL)
     shortcuts = re_shortcuts.findall(contents)
     for entry in shortcuts:
-      print ("shortcut: {}".format(entry))
+      # We can directly decode byte objects on the fly
+      # https://docs.python.org/3/library/stdtypes.html#bytes.decode
+      print ("shortcut: {}".format(entry.decode(errors='replace')))
+      print ("")
+
+    # Now that we have each shortcut sectioned out, we need to parse out each shortcut entry into it's components
+    re_entrynum = re.compile(b"\x00([0-9]*)\x00",re.DOTALL)
+    re_appid = re.compile(b"\x02([^\x00]*)\x00{1,}")
+    for entry in shortcuts:
+      entrynum = re_entrynum.search(entry)
+      print (" Entry: {}".format(entrynum.group(1).decode(errors='ignore')))
+      appid = re_appid.search(entry)
+      print (" Appid: {}".format(appid))
+      print (" Appid: {}".format(appid.group(1).decode(errors='ignore')))
+      print ("")
 
     # Binary streams have no close function
     #contents.close()
