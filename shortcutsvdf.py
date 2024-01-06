@@ -60,22 +60,42 @@ class shortcutsVDF:
     # Regex to find the shortcuts by shortcut number (NUL[0-9]*NUL ... BS BS)
     re_shortcuts = re.compile(b"(\x00[0-9*]\x00[^\x08]*[\x08]{2,})",re.DOTALL)
     shortcuts = re_shortcuts.findall(contents)
-    for entry in shortcuts:
-      # We can directly decode byte objects on the fly
-      # https://docs.python.org/3/library/stdtypes.html#bytes.decode
-      print ("shortcut: {}".format(entry.decode(errors='replace')))
-      print ("")
+    #for entry in shortcuts:
+    #  # We can directly decode byte objects on the fly
+    #  # https://docs.python.org/3/library/stdtypes.html#bytes.decode
+    #  print ("shortcut: {}".format(entry.decode(errors='replace')))
+    #  print ("")
 
     # Now that we have each shortcut sectioned out, we need to parse out each shortcut entry into it's components
-    re_entrynum = re.compile(b"\x00([0-9]*)\x00",re.DOTALL)
-    re_appid = re.compile(b"\x02([^\x00]*)\x00{1,}")
+    # The easiest way, without using an regex itterator, is to grab ALL of the
+    # fields with a single regex, with each field pulled out into a querryable
+    # group
+    # NOTE: We should have re.DOTALL AND re.VERBOSE in here, but I can't figure
+    #       out how to pass two flags to 're.' at the same time, and VERBOSE is
+    #       more imporant for readability as VDF files are not allowed to
+    #       contain newline characters in the first place
+    re_fields = re.compile(b"""
+                           \x00(?P<entry_num>[0-9]*)\x00 # |NUL| Number |NUL|
+                           \x02appid[\x00\x01]\x00\x00\x00 # |STX|appid|NUL/SOH| |NUL||NUL||NUL||NUL|
+                          (?P<remainder>.*)""", re.VERBOSE)
+                           #\x01AppName\x00(?P<appname>[^/x00]*)\x00 # |SOH|AppName|NUL|APP NAME WITHOUT QUOTES|NUL|
     for entry in shortcuts:
-      entrynum = re_entrynum.search(entry)
-      print (" Entry: {}".format(entrynum.group(1).decode(errors='ignore')))
-      appid = re_appid.search(entry)
-      print (" Appid: {}".format(appid))
-      print (" Appid: {}".format(appid.group(1).decode(errors='ignore')))
-      print ("")
+      print ("shortcut: {}".format(entry.decode(errors='replace')))
+      fields = re_fields.search(entry)
+      print (" Entry: {}".format(fields.group('entry_num').decode(errors='ignore')))
+      #print (" AppName : {}".format(fields.group('appname').decode))
+      print (" Unparsed: {}".format(fields.group('remainder').decode(errors='ignore')))
+      print ('')
+
+    #re_entrynum = re.compile(b"\x00([0-9]*)\x00",re.DOTALL)
+    #re_appid = re.compile(b"\x02([^\x00]*)\x00{1,}")
+    #for entry in shortcuts:
+    #  entrynum = re_entrynum.search(entry)
+    #  print (" Entry: {}".format(entrynum.group(1).decode(errors='ignore')))
+    #  appid = re_appid.search(entry)
+    #  print (" Appid: {}".format(appid))
+    #  print (" Appid: {}".format(appid.group(1).decode(errors='ignore')))
+    #  print ("")
 
     # Binary streams have no close function
     #contents.close()
