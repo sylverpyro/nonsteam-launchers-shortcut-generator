@@ -52,10 +52,10 @@ class shortcutsVDF:
 
     # Example of compiling binary regex seraches and dicts
     # https://code.activestate.com/recipes/181065-parsing-binary-files-with-regular-expressions/
-    nullterms = re.compile(b"(.*?)\x00",re.DOTALL)
-    nullsplits = nullterms.findall(contents)
-    for entry in nullsplits:
-      print("Entry: {}".format(entry))
+    #nullterms = re.compile(b"(.*?)\x00",re.DOTALL)
+    #nullsplits = nullterms.findall(contents)
+    #for entry in nullsplits:
+    #  print("Entry: {}".format(entry))
 
     # Regex to find the shortcuts by shortcut number (NUL[0-9]*NUL ... BS BS)
     re_shortcuts = re.compile(b"(\x00[0-9*]\x00[^\x08]*[\x08]{2,})",re.DOTALL)
@@ -74,17 +74,19 @@ class shortcutsVDF:
     #       out how to pass two flags to 're.' at the same time, and VERBOSE is
     #       more imporant for readability as VDF files are not allowed to
     #       contain newline characters in the first place
+    # Merging flags: x = re.findall(pattern=r'CAT.+?END', string='Cat \n eND', flags=re.I | re.DOTALL)
     re_fields = re.compile(b"""
-                           \x00(?P<entry_num>[0-9]*)\x00 # |NUL| Number |NUL|
-                           \x02appid[\x00\x01]\x00\x00\x00 # |STX|appid|NUL/SOH| |NUL||NUL||NUL||NUL|
-                          (?P<remainder>.*)""", re.VERBOSE)
-                           #\x01AppName\x00(?P<appname>[^/x00]*)\x00 # |SOH|AppName|NUL|APP NAME WITHOUT QUOTES|NUL|
+      \x00(?P<entry_num>[0-9]*)\x00             # |NUL|number|NUL|
+      \x02appid(?P<appid_data>[^\x01]*)         # |STX|appid|binarydata|
+      \x01appname\x00(?P<app_name>[^\x00]*)\x00 # |SOH|appname|NUL|app name|NUL|
+      (?P<remainder>.*)""", re.VERBOSE|re.DOTALL|re.IGNORECASE)
     for entry in shortcuts:
       print ("shortcut: {}".format(entry.decode(errors='replace')))
       fields = re_fields.search(entry)
-      print (" Entry: {}".format(fields.group('entry_num').decode(errors='ignore')))
-      #print (" AppName : {}".format(fields.group('appname').decode))
-      print (" Unparsed: {}".format(fields.group('remainder').decode(errors='ignore')))
+      print (" Entry     : {}".format(fields.group('entry_num').decode(errors='backslashreplace')))
+      print (" Appid Data: {}".format(fields.group('appid_data').decode(errors='backslashreplace')))
+      print (" AppName : {}".format(fields.group('app_name').decode(errors='backslashreplace')))
+      print (" Unparsed: {}".format(fields.group('remainder').decode(errors='backslashreplace')))
       print ('')
 
     #re_entrynum = re.compile(b"\x00([0-9]*)\x00",re.DOTALL)
