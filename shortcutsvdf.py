@@ -5,9 +5,6 @@
 
 # Reference: Steam developer documentation on the non-steam game shortcut file format: https://developer.valvesoftware.com/wiki/Add_Non-Steam_Game
 
-# Needed to open, read, and write files
-import sys
-
 # Needed to normalize filesystem paths
 # https://docs.python.org/3/library/os.html#module-os
 import os
@@ -15,6 +12,8 @@ import os
 # Needed to leverage Regex searches of the shortcut file
 import re
 
+# Needed to open, read, and write files
+import sys
 
 # Define some short-hand for the binary speerators used in the VDF format
 #  https://developer.valvesoftware.com/wiki/Add_Non-Steam_Game
@@ -77,11 +76,12 @@ class shortcutsVDF:
     # Merging flags: x = re.findall(pattern=r'CAT.+?END', string='Cat \n eND', flags=re.I | re.DOTALL)
     re_fields = re.compile(b"""
       \x00(?P<entry_num>[0-9]*)\x00             # |NUL|number|NUL|
-      \x02appid(?P<appid_data>[^\x01]*)         # |STX|appid|binarydata|
+      \x02appid(?P<appid_data>[^\x01]*)         # |STX|appid|data(4-chars)|
       \x01appname\x00(?P<app_name>[^\x00]*)\x00 # |SOH|appname|NUL|app name|NUL|
       (?P<remainder>.*)""", re.VERBOSE|re.DOTALL|re.IGNORECASE)
+    # Print out each field we just extracted, making sure to replace binary data with backslash versions
     for entry in shortcuts:
-      print ("shortcut: {}".format(entry.decode(errors='replace')))
+      print ("shortcut: {}".format(entry.decode(errors='backslashreplace')))
       fields = re_fields.search(entry)
       print (" Entry     : {}".format(fields.group('entry_num').decode(errors='backslashreplace')))
       print (" Appid Data: {}".format(fields.group('appid_data').decode(errors='backslashreplace')))
