@@ -65,6 +65,7 @@ So it's likely safer to search for the |SOH| that follows that sets the AppName 
   |STX|Devkit|NUL||NUL||NUL||NUL||NUL|
   |SOH|DevkitGameID|NUL||NUL|
   |STX|LastPlayTime|NUL||NUL||NUL||NUL||NUL|
+  |SOH|FlatpakAppID|NUL||NUL| # <-Seems to only be present on Linux
   |NUL|tags|NUL|
    |SOH|0|NUL|favorite|NUL|
   |BS|
@@ -84,8 +85,8 @@ Real shortcut example
   # Shortcut entry number
   |\x00|6|\x00|
 
-    # AppID: |STX|appid|.{4}|
-    |\x02|appid|nJ\xa4\xbd|
+    # AppID: |STX|appid|.{4}
+    |\x02|appid|nJ\xa4\xbd
 
     # AppName: |SOH|appname|NUL|[^NULL]*|\x00|
     |\x01|appname|\x00|Loop Hero|\x00|

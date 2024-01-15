@@ -66,38 +66,46 @@ class shortcutsVDF:
     #  print ("")
 
     # Now that we have each shortcut sectioned out, we need to parse out each shortcut entry into it's components
-    # The easiest way, without using an regex itterator, is to grab ALL of the
-    # fields with a single regex, with each field pulled out into a querryable
-    # group
-    # NOTE: We should have re.DOTALL AND re.VERBOSE in here, but I can't figure
-    #       out how to pass two flags to 're.' at the same time, and VERBOSE is
-    #       more imporant for readability as VDF files are not allowed to
-    #       contain newline characters in the first place
+    # Originally the goal was to make one giant regex and extract the fields all at once.  However it turns out that some fields are optional and the fields are not required to be in a strict order.
+    # So, we need to extract the fields one at a time unfortunately
     # Merging flags: x = re.findall(pattern=r'CAT.+?END', string='Cat \n eND', flags=re.I | re.DOTALL)
-    re_fields = re.compile(b"""
-      \x00(?P<entry_num>[0-9]*)\x00             # |NUL|number|NUL|
-      \x02appid(?P<appid_data>[^\x01]*)         # |STX|appid|data(4-chars)|
-      \x01appname\x00(?P<app_name>[^\x00]*)\x00 # |SOH|appname|NUL|app name|NUL|
-      (?P<remainder>.*)""", re.VERBOSE|re.DOTALL|re.IGNORECASE)
+    # re.DOTALL     - Include NEWLINE characters in '.' globs
+    # re.IGNORECASE - Make matches case-insensitive
+    # re.VERBOSE    - Allow for multi-line regexes (no longer used)
+
+    re_number  = re.compile(b"\x00(?P<entry_num>[0-9]*)\x00",re.DOTALL|re.IGNORECASE) # |NUL|number|NUL|
+    re_appid   = re.compile(b"\x02appid(?P<appid_data>.{4})",re.DOTALL|re.IGNORECASE) # |STX|appid|<4 values>
+    re_appname = re.compile(b"\x01appname\x00(?P<app_name>[^\x00]*)\x00",re.DOTALL|re.IGNORECASE) # |SOH|appname|NUL|Application Name|NUL|
+
+    ## This method ultimately does not work as the fields are not in a fully predictable order
+    ## AND they are not all present on all platforms. 
+    #re_fields = re.compile(b"""
+    #  \x00(?P<entry_num>[0-9]*)\x00             # |NUL|number|NUL|
+    #  \x02appid(?P<appid_data>[^\x01]*)         # |STX|appid|data(4-chars)|
+    #  \x01appname\x00(?P<app_name>[^\x00]*)\x00 # |SOH|appname|NUL|app name|NUL|
+    #  (?P<remainder>.*)""", re.VERBOSE|re.DOTALL|re.IGNORECASE)
+
     # Print out each field we just extracted, making sure to replace binary data with backslash versions
     for entry in shortcuts:
       print ("shortcut: {}".format(entry.decode(errors='backslashreplace')))
-      fields = re_fields.search(entry)
-      print (" Entry     : {}".format(fields.group('entry_num').decode(errors='backslashreplace')))
-      print (" Appid Data: {}".format(fields.group('appid_data').decode(errors='backslashreplace')))
-      print (" AppName : {}".format(fields.group('app_name').decode(errors='backslashreplace')))
-      print (" Unparsed: {}".format(fields.group('remainder').decode(errors='backslashreplace')))
-      print ('')
+      ## This is the OLD all-fields based method which ultimately does not work
+      #fields = re_fields.search(entry)
+      #print (" Entry     : {}".format(fields.group('entry_num').decode(errors='backslashreplace')))
+      #print (" Appid Data: {}".format(fields.group('appid_data').decode(errors='backslashreplace')))
+      #print (" AppName : {}".format(fields.group('app_name').decode(errors='backslashreplace')))
+      #print (" Unparsed: {}".format(fields.group('remainder').decode(errors='backslashreplace')))
 
-    #re_entrynum = re.compile(b"\x00([0-9]*)\x00",re.DOTALL)
-    #re_appid = re.compile(b"\x02([^\x00]*)\x00{1,}")
-    #for entry in shortcuts:
-    #  entrynum = re_entrynum.search(entry)
-    #  print (" Entry: {}".format(entrynum.group(1).decode(errors='ignore')))
-    #  appid = re_appid.search(entry)
-    #  print (" Appid: {}".format(appid))
-    #  print (" Appid: {}".format(appid.group(1).decode(errors='ignore')))
-    #  print ("")
+      number = re_number.search(entry)
+      print (" Entry   : '{}'".format(number.group('entry_num').decode(errors='backslashreplace')))
+
+      appid = re_appid.search(entry)
+      print (" Appid   : '{}'".format(appid.group('appid_data').decode(errors='backslashreplace')))
+
+      appname = re_appname.search(entry)
+      print (" AppName : '{}'".format(appname.group('app_name').decode(errors='backslashreplace')))
+
+      # Print a seperator to visually space out entries
+      print ('')
 
     # Binary streams have no close function
     #contents.close()
