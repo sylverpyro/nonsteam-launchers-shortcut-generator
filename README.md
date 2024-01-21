@@ -12,7 +12,7 @@ So: I am working on porting the tool to Python which has at least one known good
 Personal experience: Directly installing the non-steam storefronts has proven to be the most reliable way to play non-steam games on SteamOS (Heroic and Lutris frequently have problems installing or launching games, vs the native storefronts which - unless the storefront is broken fundamentally in Proton - always tend to work as expected)
 
 ### But why not just use NonSteamLaunchers-On-Steam-Deck?
-Moraroy's fantastic project for automatically installing all major native game storefronts/launchers on the steamdeck is fantastic.  It got even better in 3.x when he started a python script to scan and add games from those storefronts directly to your steamdeck library as a Linux Service.
+Moraroy's project for automatically installing all major native game storefronts/launchers on the steamdeck is fantastic.  It got even better in 3.x when it added a python script to scan and add games from those storefronts directly to your steamdeck library as a Linux Service.
 
 In a lot of whys, that has scooped the intent of this project.  Just use NonSteamLaunchers-On-Steam-Deck's python script and you're all set.
 
