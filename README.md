@@ -22,6 +22,14 @@ However:
 * NSLOSD is targeted directly at the SteamDeck/SteamOS
   * Chances of it supporting any other OS in the future are very slim to be sure
 
+### What about other existing projects?
+Steam Shortcut Manager
+* https://github.com/CorporalQuesadilla/Steam-Shortcut-Manager
+* Written in Python 2.7 (needs modernizing)
+* Is really a front end to writing out changes to shortcuts.vdf
+* Doesn't set Proton, Artwork, ect.
+* Can't be used to remove an existing shortcut if needed
+* May be a path way to for, updating it to 3.x, and extending it to have the additional features...
 
 ## Research and references
 Accumulated research of where various storefronts store data about games they have installed and extracting the necessary data to create a steam shortcut
