@@ -23,13 +23,29 @@ However:
   * Chances of it supporting any other OS in the future are very slim to be sure
 
 ### What about other existing projects?
-Steam Shortcut Manager
+**Steam Shortcut Manager**
 * https://github.com/CorporalQuesadilla/Steam-Shortcut-Manager
 * Written in Python 2.7 (needs modernizing)
 * Is really a front end to writing out changes to shortcuts.vdf
 * Doesn't set Proton, Artwork, ect.
 * Can't be used to remove an existing shortcut if needed
 * May be a path way to for, updating it to 3.x, and extending it to have the additional features...
+
+**BOILR**
+* https://github.com/PhilipK/BoilR
+* Written in RUST so nice an modern (and memory safe)
+* Currently works best and most consistently on Windows
+* SteamOS/Linux: Lacks the ability to configure/point the application at the install prefix
+  * There is an open issue for this however
+
+**All**
+All the existing projects lack a few key items that bother me a LOT
+- Cutomizing the collections in Steam that are created for each storefront
+  - e.g. Call the collection for games from EGS `NSL: EGS` (or something else wild)
+- Lack of management of existing shortcuts created by the tool
+  - e.g. I change my mind and want the tool to use `Non-steam games: EGS` and have the tool move them automatically
+- Lack of pruning/removed game management
+  - e.g. I uninstall Hadies from EGS, the tool should detect this and remove the Hades EGS shortcut (but leave, for example, the GOG shortcut alone)
 
 ## Research and references
 Accumulated research of where various storefronts store data about games they have installed and extracting the necessary data to create a steam shortcut
@@ -49,7 +65,7 @@ Full credit to https://github.com/moraroy for fidning all of these first for the
 
 
 ## Status and Roadmap
-Pre-0.1 BASH Script
+[Pre-0.1 BASH Script](nssg.sh)
 
 Working:
 * Generate text help for creating shortcuts for all installed EGL, GOG, EA, Ubisoft, and Amazon
@@ -65,33 +81,39 @@ Other functionality is listed in Roadmap
 
 ### Roadmap
 0.1
-- Re-write in Python
-- Support for MAJOR storefronts
+- Linux/SteamOS wine/Proton support
+- Support for detecting games of MAJOR storefronts
   - Starting with: EGL, GOG, EA, Ubisoft, Battle.net, Amazon
 - Output accurate data for generating steam links for all installed games
+  - As CLI/human readable text
+- Insert missing games into Steam shortcuts.vdf
+- Identify shortcuts under managment vs shortcuts added by user or other tools
 
  0.2
-- Support for detecting proton and GE-Proton instances for generating steam VDF data
-  - After some reasearch, this may require, or at lest necessitate, switching this to Python so I don't need to implement a bash-parser for the Valve DataFormat which exists in Python and Rust already
-- Support for setting preferred Proton/GE-Proton version (default will likely be Ge-Proton-LATEST, then Proton-LATEST)
+- Support for detecting installed proton and GE-Proton instances
+- Support for injecting proton / GE-Proton config data for managed shortcuts
+- Support for setting preferred Proton/GE-Proton version
+
+0.3
+- Detect removed games and remove
+  - managed shortcut data
+  - managed proton config data
 
 0.4
-- Detect if a shortcut is already in shortcuts.vdf or not and add if missing
-
-0.5
-- Support for other storefronts: itch.io
-- Support for detecting if a game has been uninstalled and remove shortcuts automatically from shortcuts
-
-0.6
-- Switchable compatdata folder paths
+- Configurable compatdata folder paths per storefront
 - config file support (stores paths compatdata folders)
 - support for compatdata/storefront install folders on sdcard
 
-0.7
+0.5
 - Auto Detect compatdata folders for all storefronts
 
+0.6
+- Windows Support
+
+0.7
+- Decky script support 
+
 0.8
-- Windows Support ** (currently wishful thinking)
 
 0.8
 - Document how to run via the scripts shortcut in Decky so you can update the game library on the fly
