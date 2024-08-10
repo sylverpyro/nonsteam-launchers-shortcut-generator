@@ -12,7 +12,7 @@ import os
 # Search for our module folder
 # This must be done from the top level as imports are scoped per-function
 # Depending on if this is run from the parent folder or not changes the path
-if os.path.exists('./modules') :
+if os.path.exists("./modules") :
   # This is pre 3.4 compatible
   ex_mods = os.path.abspath('./modules')
 elif os.path.exists('../modules') : 
@@ -32,7 +32,7 @@ import vdf
 def open_and_show_shortcuts():
   import vdf
   # Load the shortcuts file
-  shortcuts = vdf.load(open('./Examples/shortcuts_vdf/shortcuts.vdf'))
+  shortcuts = vdf.parse(open("./examples/shortcuts_vdf/shortcuts.vdf"))
 
   # Dump the loaded shortcuts to plain text
   shortcuts_txt = vdf.dumps(shortcuts, pretty=True)
